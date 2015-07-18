@@ -14,13 +14,17 @@ pollutantmean <- function(directory, pollutant, id = 1:332) {
   ## NOTE: Do not round the result!
   ############################################################
   ############################################################
-  
+
   # List all files in the directory
   files <- list.files(directory)
-  
+
   # Read in all data to single data frame
   for (i in id) {
-    data <- read.csv(files[i])
+    if (i==id[[1]]){
+      data <- read.csv(paste(directory,"/",files[i],sep=""))
+    } else {
+      data <- rbind(data,read.csv(paste(directory,"/",files[i],sep="")))
+    }
   }
   
   # Find mean of pollutant
