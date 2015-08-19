@@ -77,6 +77,7 @@ EDU<-read.csv(".\\Quiz3\\FEDSTATS_Country.csv")
 DT<-merge(GDP,EDU,by.x="CountryCode",by.y="CountryCode")
 #DT$Ranking<-as.numeric(DT$Ranking)
 DT2<-arrange(DT,desc(Ranking))
+DT2[13,]
 # 189 matches, 13th country is St. Kitts and Nevis
 
 
@@ -84,7 +85,8 @@ DT2<-arrange(DT,desc(Ranking))
 
 
 # Question 4
-# What is the average GDP ranking for the "High income: OECD" and "High income: nonOECD" group?
+# What is the average GDP ranking for the "High income: OECD" and "High income:
+# nonOECD" group?
 # 23, 45
 # 30, 37
 # 32.96667, 91.91304
@@ -92,8 +94,17 @@ DT2<-arrange(DT,desc(Ranking))
 # 23, 30
 # 23.966667, 30.91304
 
+DT3=DT2[with(DT2,Income.Group=="High income: OECD"),]
+mean(DT3$Ranking)
+#[1] 32.96667
+DT3=DT2[(DT2$Income.Group=="High income: nonOECD"),]
+mean(DT3$Ranking)
+#[1] 91.91304
 
-
+#OR
+install.packages("plyr")
+library(plyr)
+ddply(DT2,~Income.Group,summarise,mean=mean(Ranking))
 
 
 
@@ -102,8 +113,14 @@ DT2<-arrange(DT,desc(Ranking))
 
 
 # Question 5
-# Cut the GDP ranking into 5 separate quantile groups. Make a table versus Income.Group. How many countries are Lower middle income but among the 38 nations with highest GDP?
+# Cut the GDP ranking into 5 separate quantile groups. Make a table versus Income.Group. 
+# How many countries are Lower middle income but among the 38 nations with highest GDP?
 # 3
 # 13
 # 12
 # 5
+
+DT2$quantile <- with(DT2, cut(DT2$Ranking, breaks=quantile(DT2$Ranking, probs=seq(0,1,by=.2))))
+xt=xtabs(~ quantile + Income.Group,data=DT2)
+xt
+#5
