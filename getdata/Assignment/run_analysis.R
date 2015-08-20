@@ -12,67 +12,74 @@
 ###########################################
 
 
-# Change working directory
-setwd("C:/Users/Ellume/Git/datasciencecoursera/getdata/Assignment")
+# Change to my working directory (commented out for assignment submission)
+# setwd("C:/Users/Ellume/Git/datasciencecoursera/getdata/Assignment")
 
-# Install required dplyr package
-install.packages("dplyr")
-library(dplyr)
+# Require dplyr package
+require("dplyr")
 
+# Read in features and activity labels
+features = read.table("./UCI HAR Dataset/features.txt")
+activity.labels = read.table("./UCI HAR Dataset/activity_labels.txt")
+
+# Use only Mean and Standard Deviation features as required by assignment
+features.mean=grep("(mean\\(\\)|gravityMean|AccMean)",features[,2],ignore.case=T)
+features.sd=grep("std\\(\\)",features[,2],ignore.case=T)
+features.used=c(features.mean, features.sd)
+
+#######
 
 # Read in data for test subjects
 test.subject = read.table("./UCI HAR Dataset/test/subject_test.txt")
+colnames(test.subject)="Subject"
+test.subject=as.factor(test.subject[[1]])
 test.count=nrow(test.subject)
 
-# Read in and calculate Mean and Standard Deviation for test subjects
+# Read in, select used features, and set readable variable names for test subjects
 test.measure = read.table("./UCI HAR Dataset/test/X_test.txt")
-test.measure.mean=apply(test.measure,1,mean)
-test.measure.sd=apply(test.measure,1,sd)
+test.measure.used=test.measure[,features.used]
+colnames(test.measure.used)=features[features.used,2]
 
-# Transform activity data into a readable format
+# Read and convert activity data into a readable format
 test.activity = read.table("./UCI HAR Dataset/test/Y_test.txt")
-test.activity.readable = test.activity
-test.activity.readable[test.activity.readable==1]="Walking"
-test.activity.readable[test.activity.readable==2]="Walking.Upstairs"
-test.activity.readable[test.activity.readable==3]="Walking.Downstairs"
-test.activity.readable[test.activity.readable==4]="Sitting"
-test.activity.readable[test.activity.readable==5]="Standing"
-test.activity.readable[test.activity.readable==6]="Laying"
+for (i in activity.labels[,1]) {
+  test.activity[test.activity==i]=as.character(activity.labels[i,2])
+}
+test.activity=as.factor(test.activity[[1]])
 
-# create table for test subjects
-test=data.frame(Subject=test.subject[[1]],
-               Data.Set=rep("Test",times=test.count),
-               Activity=test.activity.readable[[1]],
-               Measure.Mean=test.measure.mean,
-               Measure.SD=test.measure.sd)
+# create table for test subjects and create data set variable
+test.dataset=as.factor(rep("TEST",n=test.count))
+test=cbind(subject=test.subject,
+           dataset=test.dataset,
+           activity=test.activity,
+           test.measure.used)
 
 #######
 
 # Read in data for train subjects
 train.subject = read.table("./UCI HAR Dataset/train/subject_train.txt")
+colnames(train.subject)="Subject"
+train.subject=as.factor(train.subject[[1]])
 train.count=nrow(train.subject)
 
-# Read in and calculate Mean and Standard Deviation for train subjects
+# Read in, select used features, and set readable variable names for train subjects
 train.measure = read.table("./UCI HAR Dataset/train/X_train.txt")
-train.measure.mean=apply(train.measure,1,mean)
-train.measure.sd=apply(train.measure,1,sd)
+train.measure.used=train.measure[,features.used]
+colnames(train.measure.used)=features[features.used,2]
 
-# Transform activity data into a readable format
+# Read and convert activity data into a readable format
 train.activity = read.table("./UCI HAR Dataset/train/Y_train.txt")
-train.activity.readable = train.activity
-train.activity.readable[train.activity.readable==1]="Walking"
-train.activity.readable[train.activity.readable==2]="Walking.Upstairs"
-train.activity.readable[train.activity.readable==3]="Walking.Downstairs"
-train.activity.readable[train.activity.readable==4]="Sitting"
-train.activity.readable[train.activity.readable==5]="Standing"
-train.activity.readable[train.activity.readable==6]="Laying"
+for (i in activity.labels[,1]) {
+  train.activity[train.activity==i]=as.character(activity.labels[i,2])
+}
+train.activity=as.factor(train.activity[[1]])
 
-# create table for train subjects
-train=data.frame(Subject=train.subject[[1]],
-               Data.Set=rep("Train",times=train.count),
-               Activity=train.activity.readable[[1]],
-               Measure.Mean=train.measure.mean,
-               Measure.SD=train.measure.sd)
+# create table for train subjects and create data set variable
+train.dataset=as.factor(rep("TRAIN",n=train.count))
+train=cbind(subject=train.subject,
+           dataset=train.dataset,
+           activity=train.activity,
+           train.measure.used)
 
 ########
 
@@ -80,8 +87,11 @@ train=data.frame(Subject=train.subject[[1]],
 cleaned.data=rbind(test,train)
 
 # Create a tidy summary table
-grouped.data=group_by(cleaned.data,Subject,Activity)
-tidy.summary.data=summarise(grouped.data,Mean=mean(Measure.Mean),SD=mean(Measure.SD))
+tidy.data=aggregate(cleaned.data[,-3:-1],
+                    by=list(subject=cleaned.data$subject,
+                            activity=cleaned.data$activity,
+                            dataset=cleaned.data$dataset),
+                    mean)
 
 # Write the table to txt file
-write.table(tidy.summary.data, "./tidy.summary.data.txt", row.names=F)
+write.table(tidy.data, "./tidy.data.txt", row.names=F)
